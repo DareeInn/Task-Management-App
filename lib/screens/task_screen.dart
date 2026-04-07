@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/task.dart';
 import '../services/task_service.dart';
+import '../widgets/task_tile.dart';
 
 class TaskScreen extends StatefulWidget {
   const TaskScreen({super.key});
@@ -89,26 +90,7 @@ class _TaskScreenState extends State<TaskScreen> {
                     itemBuilder: (context, index) {
                       final task = tasks[index];
 
-                      return Card(
-                        child: ListTile(
-                          leading: Checkbox(
-                            value: task.isCompleted,
-                            onChanged: (_) => _taskService.toggleTask(task),
-                          ),
-                          title: Text(
-                            task.title,
-                            style: TextStyle(
-                              decoration: task.isCompleted
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => _taskService.deleteTask(task.id),
-                          ),
-                        ),
-                      );
+                      return TaskTile(task: task, taskService: _taskService);
                     },
                   );
                 },
