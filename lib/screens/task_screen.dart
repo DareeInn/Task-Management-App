@@ -1,12 +1,122 @@
 import 'package:flutter/material.dart';
 
-class TaskScreen extends StatelessWidget {
+import '../models/task.dart';
+import '../services/task_service.dart';
+
+class TaskScreen extends StatefulWidget {
   const TaskScreen({super.key});
 
   @override
+  State<TaskScreen> createState() => _TaskScreenState();
+}
+
+class _TaskScreenState extends State<TaskScreen> {
+  final TaskService _taskService = TaskService();
+  final TextEditingController _taskController = TextEditingController();
+
+  @override
+  void dispose() {
+    _taskController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addTask() async {
+    final title = _taskController.text.trim();
+
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a task title before adding.'),
+        ),
+      );
+      return;
+    }
+
+    await _taskService.addTask(title);
+    _taskController.clear();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Task Management App Connected')),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Task Management App'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _taskController,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter a new task...',
+                      border: OutlineInputBorder(),
+                    ),
+                    onSubmitted: (_) => _addTask(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(onPressed: _addTask, child: const Text('Add')),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: StreamBuilder<List<Task>>(
+                stream: _taskService.streamTasks(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+
+                  final tasks = snapshot.data ?? [];
+
+                  if (tasks.isEmpty) {
+                    return const Center(
+                      child: Text('No tasks yet. Add one above!'),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: tasks.length,
+                    itemBuilder: (context, index) {
+                      final task = tasks[index];
+
+                      return Card(
+                        child: ListTile(
+                          leading: Checkbox(
+                            value: task.isCompleted,
+                            onChanged: (_) => _taskService.toggleTask(task),
+                          ),
+                          title: Text(
+                            task.title,
+                            style: TextStyle(
+                              decoration: task.isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () => _taskService.deleteTask(task.id),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
