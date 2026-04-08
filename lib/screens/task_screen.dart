@@ -14,6 +14,7 @@ class TaskScreen extends StatefulWidget {
 class _TaskScreenState extends State<TaskScreen> {
   final TaskService _taskService = TaskService();
   final TextEditingController _taskController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void dispose() {
@@ -65,6 +66,20 @@ class _TaskScreenState extends State<TaskScreen> {
               ],
             ),
             const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search tasks...',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.search),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.toLowerCase();
+                });
+              },
+            ),
+            const SizedBox(height: 12),
             Expanded(
               child: StreamBuilder<List<Task>>(
                 stream: _taskService.streamTasks(),
@@ -77,7 +92,12 @@ class _TaskScreenState extends State<TaskScreen> {
                     return Center(child: Text('Error: ${snapshot.error}'));
                   }
 
-                  final tasks = snapshot.data ?? [];
+                  final tasks = (snapshot.data ?? [])
+                      .where(
+                        (task) =>
+                            task.title.toLowerCase().contains(_searchQuery),
+                      )
+                      .toList();
 
                   if (tasks.isEmpty) {
                     return const Center(
